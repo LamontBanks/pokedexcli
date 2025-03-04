@@ -29,8 +29,8 @@ func TestCleanInput(t *testing.T) {
 
 	// Loops through the list of "test case" structs, passing the input into the function
 	// then checking against the expected output
-	// Precisely checking each apsect of the result allows us to provide better failure messages
-	// compared to just doing a single slice comparison
+	// Explicitly checking each apsect of the result allows us to provide better failure messages
+	// compared to just doing a singular slice-to-slice comparison
 	for _, c := range cases {
 		actual := cleanInput(c.input)
 
