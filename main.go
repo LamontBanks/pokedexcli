@@ -5,36 +5,64 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/LamontBanks/pokedexcli/internal/pokeapi"
 )
 
-// Commands
-type cliCommand struct {
-	name        string
-	description string
-	callback    func() error
-}
+// Main ---
+var commands = map[string]cliCommand{}
 
-// Command Functions ---
-func commandHelp() error {
-	fmt.Println("Welcome to the Pokedex!")
-	fmt.Println("Usage:")
-	fmt.Println()
-
-	// Print all the commands and descriptions
-	var msg string
-	for _, cmd := range commands {
-		msg += fmt.Sprintf("%v: %v\n", cmd.name, cmd.description)
+func main() {
+	// Set commands
+	commands["help"] = cliCommand{
+		name:        "help",
+		description: "Displays a help message",
+		callback:    commandHelp,
 	}
-	fmt.Println(msg)
+	commands["exit"] = cliCommand{
+		name:        "exit",
+		description: "Exit the Pokedex",
+		callback:    commandExit,
+	}
+	commands["map"] = cliCommand{
+		name:        "map",
+		description: "List Pokemon locations, page forward through results",
+		callback:    pokeapi.MapCommand,
+	}
+	commands["mapb"] = cliCommand{
+		name:        "mapb",
+		description: "List Pokemon locations, page backwards through results",
+		callback:    pokeapi.MapBackCommand,
+	}
 
-	return nil
-}
+	// Read-Eval-Print-Loop
+	scanner := bufio.NewScanner(os.Stdin)
+	var commandConfig pokeapi.Config
+	for {
+		fmt.Printf("Pokedex > ")
 
-func commandExit() error {
-	fmt.Println("Closing the Pokedex... Goodbye!")
-	os.Exit(0)
+		// Read
+		scanner.Scan()
+		userInput := scanner.Text()
+		tokens := cleanInput(userInput)
 
-	return nil
+		// Eval: Check if command is valid
+		if len(tokens) == 0 {
+			continue
+		}
+		cmd, exists := commands[tokens[0]]
+		if !exists {
+			fmt.Println("Unknown command:", tokens[0])
+			continue
+		}
+
+		// Print
+		// If valid, run the command, passing a pointer to config to save parts of the response
+		// for subsequent calls...?
+		if err := cmd.callback(&commandConfig); err != nil {
+			fmt.Println(err)
+		}
+	}
 }
 
 // Parse functions ---
@@ -55,40 +83,6 @@ func cleanInput(text string) []string {
 	return tokens
 }
 
-// Main ---
-
-var commands = map[string]cliCommand{}
-
-func main() {
-	// Set commands
-	commands["help"] = cliCommand{
-		name:        "help",
-		description: "Displays a help message",
-		callback:    commandHelp,
-	}
-	commands["exit"] = cliCommand{
-		name:        "exit",
-		description: "Exit the Pokedex",
-		callback:    commandExit,
-	}
-
-	// Read-Eval-Print-Loop
-	scanner := bufio.NewScanner(os.Stdin)
-	for {
-		fmt.Printf("Pokedex > ")
-
-		scanner.Scan()
-		userInput := scanner.Text()
-		tokens := cleanInput(userInput)
-
-		// Run command
-		cmd, exists := commands[tokens[0]]
-		if !exists {
-			fmt.Println("Unknown command:", tokens[0])
-			continue
-		}
-		if err := cmd.callback(); err != nil {
-			fmt.Println(err)
-		}
-	}
+func getCommands() map[string]cliCommand {
+	return commands
 }
