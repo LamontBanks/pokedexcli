@@ -56,7 +56,7 @@ type Maps struct {
 }
 
 // GET Pokemon maps/locations
-func mapsCommand() error {
+func mapCommand() error {
 	// Create the URL
 	fullUrl := "https://pokeapi.co/api/v2/location"
 
@@ -84,8 +84,10 @@ func mapsCommand() error {
 		return err
 	}
 
-	// Print response
-	fmt.Println(maps)
+	// Print map names
+	for _, location := range maps.Results {
+		fmt.Println(location.Name)
+	}
 	return nil
 }
 
@@ -123,10 +125,10 @@ func main() {
 		description: "Exit the Pokedex",
 		callback:    commandExit,
 	}
-	commands["maps"] = cliCommand{
-		name:        "maps",
+	commands["map"] = cliCommand{
+		name:        "map",
 		description: "List Pokemon locations",
-		callback:    mapsCommand,
+		callback:    mapCommand,
 	}
 
 	// Read-Eval-Print-Loop
