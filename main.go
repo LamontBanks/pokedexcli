@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	httpconfig "github.com/LamontBanks/pokedexcli/internal/http_config"
 	"github.com/LamontBanks/pokedexcli/internal/pokeapi"
 )
 
@@ -37,7 +38,7 @@ func main() {
 
 	// Read-Eval-Print-Loop
 	scanner := bufio.NewScanner(os.Stdin)
-	var commandConfig pokeapi.Config
+	var commandConfig httpconfig.Config
 	for {
 		fmt.Printf("Pokedex > ")
 

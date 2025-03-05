@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/LamontBanks/pokedexcli/internal/pokeapi"
+	httpconfig "github.com/LamontBanks/pokedexcli/internal/http_config"
 )
 
-func commandExit(config *pokeapi.Config) error {
+func commandExit(config *httpconfig.Config) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 

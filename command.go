@@ -1,9 +1,9 @@
 package main
 
-import "github.com/LamontBanks/pokedexcli/internal/pokeapi"
+import httpconfig "github.com/LamontBanks/pokedexcli/internal/http_config"
 
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(*pokeapi.Config) error
+	callback    func(*httpconfig.Config) error
 }

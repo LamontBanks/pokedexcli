@@ -4,13 +4,8 @@ import (
 	"fmt"
 
 	httpclient "github.com/LamontBanks/pokedexcli/internal/http_client"
+	httpconfig "github.com/LamontBanks/pokedexcli/internal/http_config"
 )
-
-// Used to save needed response information to use between requests
-type Config struct {
-	NextUrl     *string
-	PreviousUrl *string
-}
 
 // Response Structs
 // Converted using https://mholt.github.io/json-to-go/
@@ -29,7 +24,7 @@ type Maps struct {
 }
 
 // GET Pokemon maps, move FORWARD through pages of results
-func MapCommand(config *Config) error {
+func MapCommand(config *httpconfig.Config) error {
 	// Go to the base URL, or next page (if set)
 	fullUrl := "https://pokeapi.co/api/v2/location-area"
 	if config.NextUrl != nil {
@@ -52,7 +47,7 @@ func MapCommand(config *Config) error {
 
 // GET Pokemon maps, move BACKWARDS through results
 // TODO - make into singular function
-func MapBackCommand(config *Config) error {
+func MapBackCommand(config *httpconfig.Config) error {
 	// Go to the base URL, or next page (if set)
 	fullUrl := ""
 	if config.PreviousUrl != nil {
