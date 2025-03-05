@@ -2,7 +2,9 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 )
@@ -14,7 +16,7 @@ type cliCommand struct {
 	callback    func() error
 }
 
-// Command Functions ---
+// Commands ---
 func commandHelp() error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")
@@ -34,6 +36,56 @@ func commandExit() error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 
+	return nil
+}
+
+// Response Structs
+// Converted using https://mholt.github.io/json-to-go/
+// TODO: Move into internal package
+
+// Endpoint: https://pokeapi.co/api/v2/location  (no "s" at end)
+// Doc: https://pokeapi.co/docs/v2#locations
+type Maps struct {
+	Count    int    `json:"count"`
+	Next     string `json:"next"`
+	Previous string `json:"previous"`
+	Results  []struct {
+		Name string `json:"name"`
+		URL  string `json:"url"`
+	} `json:"results"`
+}
+
+// GET Pokemon maps/locations
+func mapsCommand() error {
+	// Create the URL
+	fullUrl := "https://pokeapi.co/api/v2/location"
+
+	// Create the request
+	req, err := http.NewRequest("GET", fullUrl, nil)
+	if err != nil {
+		return err
+	}
+
+	// Create the client
+	client := &http.Client{}
+
+	// Make the request
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	// Ensure request is closed
+	defer res.Body.Close()
+
+	// Parse the location JSON
+	var maps Maps
+	decoder := json.NewDecoder(res.Body)
+	if err := decoder.Decode(&maps); err != nil {
+		return err
+	}
+
+	// Print response
+	fmt.Println(maps)
 	return nil
 }
 
@@ -70,6 +122,11 @@ func main() {
 		name:        "exit",
 		description: "Exit the Pokedex",
 		callback:    commandExit,
+	}
+	commands["maps"] = cliCommand{
+		name:        "maps",
+		description: "List Pokemon locations",
+		callback:    mapsCommand,
 	}
 
 	// Read-Eval-Print-Loop
