@@ -2,7 +2,6 @@ package httpclient
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 )
@@ -15,16 +14,16 @@ func Get(url string, responseStruct any) error {
 		return err
 	}
 
-	// Unmarshal the JSON response body
+	// Read the JSON []byte
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
 
+	// Unmarshal the JSON []byte into the provided response struct
 	if err := json.Unmarshal(data, &responseStruct); err != nil {
 		return err
 	}
-	fmt.Println(responseStruct)
 
 	return nil
 }

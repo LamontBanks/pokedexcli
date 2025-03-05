@@ -1,6 +1,7 @@
 package pokeapi
 
 import (
+	"encoding/json"
 	"fmt"
 
 	httpclient "github.com/LamontBanks/pokedexcli/internal/http_client"
@@ -23,23 +24,41 @@ type Maps struct {
 	} `json:"results"`
 }
 
-// GET Pokemon maps, move FORWARD through pages of results
+// GET Pokemon maps or move FORWARD through pages of results
 func MapCommand(config *httpconfig.Config) error {
-	// Go to the base URL, or next page (if set)
 	fullUrl := "https://pokeapi.co/api/v2/location-area"
+
+	// Use the pagination url over the default, if set
 	if config.NextUrl != nil {
 		fullUrl = *config.NextUrl
 	}
 
-	var maps Maps
-	httpclient.Get(fullUrl, &maps)
+	// Check cache first
+	var mapsResponse Maps
+	cachedBytes, responseIsCached := config.Cache.Get(fullUrl)
+
+	if responseIsCached {
+		// Unmarshal the cached bytes into the response struct
+		if err := json.Unmarshal(cachedBytes, &mapsResponse); err != nil {
+			return err
+		}
+	} else {
+		// Otherwise, make the actual request, then save to the cache
+		httpclient.Get(fullUrl, &mapsResponse)
+
+		encodededBytes, err := json.Marshal(mapsResponse)
+		if err != nil {
+			return err
+		}
+		config.Cache.Add(fullUrl, encodededBytes)
+	}
 
 	// Save the updated Previous and Next URLs of pagination
-	config.PreviousUrl = maps.Previous
-	config.NextUrl = maps.Next
+	config.PreviousUrl = mapsResponse.Previous
+	config.NextUrl = mapsResponse.Next
 
 	// Print map names
-	for _, location := range maps.Results {
+	for _, location := range mapsResponse.Results {
 		fmt.Println(location.Name)
 	}
 	return nil
@@ -57,16 +76,33 @@ func MapBackCommand(config *httpconfig.Config) error {
 		return nil
 	}
 
-	// Populate the response in `maps`
-	var maps Maps
-	httpclient.Get(fullUrl, &maps)
+	// Check cache first
+	// TODO - Make into a function?
+	var mapsResponse Maps
+	cachedBytes, responseIsCached := config.Cache.Get(fullUrl)
+
+	if responseIsCached {
+		// Unmarshal the cached bytes into the response struct
+		if err := json.Unmarshal(cachedBytes, &mapsResponse); err != nil {
+			return err
+		}
+	} else {
+		// Otherwise, make the actual request, then save to the cache
+		httpclient.Get(fullUrl, &mapsResponse)
+
+		encodededBytes, err := json.Marshal(mapsResponse)
+		if err != nil {
+			return err
+		}
+		config.Cache.Add(fullUrl, encodededBytes)
+	}
 
 	// Save the updated Previous, Next URLs of pagination
-	config.PreviousUrl = maps.Previous
-	config.NextUrl = maps.Next
+	config.PreviousUrl = mapsResponse.Previous
+	config.NextUrl = mapsResponse.Next
 
 	// Print map names
-	for _, location := range maps.Results {
+	for _, location := range mapsResponse.Results {
 		fmt.Println(location.Name)
 	}
 	return nil

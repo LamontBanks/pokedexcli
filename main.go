@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	httpconfig "github.com/LamontBanks/pokedexcli/internal/http_config"
 	"github.com/LamontBanks/pokedexcli/internal/pokeapi"
+	"github.com/LamontBanks/pokedexcli/internal/pokecache"
 )
 
 // Main ---
@@ -37,8 +39,13 @@ func main() {
 	}
 
 	// Read-Eval-Print-Loop
+	commandConfig := httpconfig.Config{
+		PreviousUrl: nil,
+		NextUrl:     nil,
+		Cache:       pokecache.NewCache(10 * time.Second),
+	}
+
 	scanner := bufio.NewScanner(os.Stdin)
-	var commandConfig httpconfig.Config
 	for {
 		fmt.Printf("Pokedex > ")
 
