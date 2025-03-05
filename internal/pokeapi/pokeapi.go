@@ -1,16 +1,15 @@
 package pokeapi
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
+
+	httpclient "github.com/LamontBanks/pokedexcli/internal/http_client"
 )
 
-// Used to save some response information to use between requests
+// Used to save needed response information to use between requests
 type Config struct {
-	NextUrl     string
-	PreviousUrl string
+	NextUrl     *string
+	PreviousUrl *string
 }
 
 // Response Structs
@@ -33,34 +32,19 @@ type Maps struct {
 func MapCommand(config *Config) error {
 	// Go to the base URL, or next page (if set)
 	fullUrl := "https://pokeapi.co/api/v2/location-area"
-	if config.NextUrl != "" {
-		fullUrl = config.NextUrl
-	}
-
-	// Make the request
-	resp, err := http.Get(fullUrl)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Unmarshal the JSON response body
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
+	if config.NextUrl != nil {
+		fullUrl = *config.NextUrl
 	}
 
 	var maps Maps
-	if err := json.Unmarshal(data, &maps); err != nil {
-		return err
-	}
+	httpclient.Get(fullUrl, &maps)
 
-	// Save the updated Previous, Next URLs of pagination
+	// Save the updated Previous and Next URLs of pagination
 	if maps.Previous != nil {
-		config.PreviousUrl = *maps.Previous
+		config.PreviousUrl = maps.Previous
 	}
 	if maps.Next != nil {
-		config.NextUrl = *maps.Next
+		config.NextUrl = maps.Next
 	}
 
 	// Print map names
@@ -75,42 +59,20 @@ func MapCommand(config *Config) error {
 func MapBackCommand(config *Config) error {
 	// Go to the base URL, or next page (if set)
 	fullUrl := ""
-	if config.PreviousUrl != "" {
-		fullUrl = config.PreviousUrl
+	if config.PreviousUrl != nil {
+		fullUrl = *config.PreviousUrl
 	} else {
 		fmt.Println("you're on the first page")
 		return nil
 	}
 
-	// Make the request
-	resp, err := http.Get(fullUrl)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Unmarshal the JSON response body
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
 	var maps Maps
-	if err := json.Unmarshal(data, &maps); err != nil {
-		return err
-	}
+	httpclient.Get(fullUrl, &maps)
 
 	// Save the updated Previous, Next URLs of pagination
-	if maps.Previous != nil {
-		config.PreviousUrl = *maps.Previous
-	} else {
-		config.PreviousUrl = ""
-	}
-
+	config.PreviousUrl = maps.Previous
 	if maps.Next != nil {
-		config.NextUrl = *maps.Next
-	} else {
-		config.NextUrl = ""
+		config.NextUrl = maps.Next
 	}
 
 	// Print map names
