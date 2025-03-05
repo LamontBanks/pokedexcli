@@ -16,8 +16,13 @@ func TestCleanInput(t *testing.T) {
 			expected: []string{"hello", "world"},
 		},
 		{
-			// Empty input
+			// Whitespace input
 			input:    " ",
+			expected: []string{},
+		},
+		{
+			// No input
+			input:    "",
 			expected: []string{},
 		},
 		{

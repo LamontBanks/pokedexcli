@@ -2,22 +2,22 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"strings"
+
+	"github.com/LamontBanks/pokedexcli/internal/pokeapi"
 )
 
 // Commands
 type cliCommand struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func(*pokeapi.Config) error
 }
 
 // Commands ---
-func commandHelp() error {
+func commandHelp(config *pokeapi.Config) error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")
 	fmt.Println()
@@ -32,62 +32,10 @@ func commandHelp() error {
 	return nil
 }
 
-func commandExit() error {
+func commandExit(config *pokeapi.Config) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 
-	return nil
-}
-
-// Response Structs
-// Converted using https://mholt.github.io/json-to-go/
-// TODO: Move into internal package
-
-// Endpoint: https://pokeapi.co/api/v2/location  (no "s" at end)
-// Doc: https://pokeapi.co/docs/v2#locations
-type Maps struct {
-	Count    int    `json:"count"`
-	Next     string `json:"next"`
-	Previous string `json:"previous"`
-	Results  []struct {
-		Name string `json:"name"`
-		URL  string `json:"url"`
-	} `json:"results"`
-}
-
-// GET Pokemon maps/locations
-func mapCommand() error {
-	// Create the URL
-	fullUrl := "https://pokeapi.co/api/v2/location"
-
-	// Create the request
-	req, err := http.NewRequest("GET", fullUrl, nil)
-	if err != nil {
-		return err
-	}
-
-	// Create the client
-	client := &http.Client{}
-
-	// Make the request
-	res, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	// Ensure request is closed
-	defer res.Body.Close()
-
-	// Parse the location JSON
-	var maps Maps
-	decoder := json.NewDecoder(res.Body)
-	if err := decoder.Decode(&maps); err != nil {
-		return err
-	}
-
-	// Print map names
-	for _, location := range maps.Results {
-		fmt.Println(location.Name)
-	}
 	return nil
 }
 
@@ -127,12 +75,18 @@ func main() {
 	}
 	commands["map"] = cliCommand{
 		name:        "map",
-		description: "List Pokemon locations",
-		callback:    mapCommand,
+		description: "List Pokemon locations, page forward through results",
+		callback:    pokeapi.MapCommand,
+	}
+	commands["mapb"] = cliCommand{
+		name:        "mapb",
+		description: "List Pokemon locations, page backwards through results",
+		callback:    pokeapi.MapBackCommand,
 	}
 
 	// Read-Eval-Print-Loop
 	scanner := bufio.NewScanner(os.Stdin)
+	var commandConfig pokeapi.Config
 	for {
 		fmt.Printf("Pokedex > ")
 
@@ -140,13 +94,20 @@ func main() {
 		userInput := scanner.Text()
 		tokens := cleanInput(userInput)
 
-		// Run command
+		if len(tokens) == 0 {
+			continue
+		}
+
+		// Check if command is valid
 		cmd, exists := commands[tokens[0]]
 		if !exists {
 			fmt.Println("Unknown command:", tokens[0])
 			continue
 		}
-		if err := cmd.callback(); err != nil {
+
+		// If valid, run the command, passing a pointer to config to save parts of the response
+		// for subsequent calls...?
+		if err := cmd.callback(&commandConfig); err != nil {
 			fmt.Println(err)
 		}
 	}
