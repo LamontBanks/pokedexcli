@@ -40,12 +40,8 @@ func MapCommand(config *Config) error {
 	httpclient.Get(fullUrl, &maps)
 
 	// Save the updated Previous and Next URLs of pagination
-	if maps.Previous != nil {
-		config.PreviousUrl = maps.Previous
-	}
-	if maps.Next != nil {
-		config.NextUrl = maps.Next
-	}
+	config.PreviousUrl = maps.Previous
+	config.NextUrl = maps.Next
 
 	// Print map names
 	for _, location := range maps.Results {
@@ -66,14 +62,13 @@ func MapBackCommand(config *Config) error {
 		return nil
 	}
 
+	// Populate the response in `maps`
 	var maps Maps
 	httpclient.Get(fullUrl, &maps)
 
 	// Save the updated Previous, Next URLs of pagination
 	config.PreviousUrl = maps.Previous
-	if maps.Next != nil {
-		config.NextUrl = maps.Next
-	}
+	config.NextUrl = maps.Next
 
 	// Print map names
 	for _, location := range maps.Results {
