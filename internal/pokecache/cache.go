@@ -37,6 +37,7 @@ func (c *Cache) Add(newKey string, newVal []byte) {
 	defer c.mu.Unlock()
 
 	creationTime := time.Now().UTC()
+
 	c.CacheEntries[newKey] = CacheEntry{
 		val:       newVal,
 		createdAt: creationTime,

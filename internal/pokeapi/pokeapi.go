@@ -33,9 +33,9 @@ func MapCommand(config *httpconfig.Config) error {
 		fullUrl = *config.NextUrl
 	}
 
-	// Check cache first
-	var mapsResponse Maps
+	// Check cache first, initialize struct to capture response
 	cachedBytes, responseIsCached := config.Cache.Get(fullUrl)
+	var mapsResponse Maps
 
 	if responseIsCached {
 		// Unmarshal the cached bytes into the response struct
@@ -43,13 +43,16 @@ func MapCommand(config *httpconfig.Config) error {
 			return err
 		}
 	} else {
-		// Otherwise, make the actual request, then save to the cache
+		// Otherwise, make the actual request
 		httpclient.Get(fullUrl, &mapsResponse)
 
+		// Convert to a []byte
 		encodededBytes, err := json.Marshal(mapsResponse)
 		if err != nil {
 			return err
 		}
+
+		// Then save to the cache
 		config.Cache.Add(fullUrl, encodededBytes)
 	}
 
@@ -77,9 +80,8 @@ func MapBackCommand(config *httpconfig.Config) error {
 	}
 
 	// Check cache first
-	// TODO - Make into a function?
-	var mapsResponse Maps
 	cachedBytes, responseIsCached := config.Cache.Get(fullUrl)
+	var mapsResponse Maps
 
 	if responseIsCached {
 		// Unmarshal the cached bytes into the response struct
