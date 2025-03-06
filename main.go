@@ -42,7 +42,7 @@ func main() {
 	commandConfig := httpconfig.Config{
 		PreviousUrl: nil,
 		NextUrl:     nil,
-		Cache:       pokecache.NewCache(10 * time.Second),
+		Cache:       pokecache.NewCache(5 * time.Minute),
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
