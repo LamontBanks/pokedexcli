@@ -71,9 +71,9 @@ func main() {
 		}
 
 		// Print
-		// If valid, run the command, passing a pointer to config to save parts of the response
-		// for subsequent calls...?
-		if err := cmd.callback(&commandConfig); err != nil {
+		// If valid, run the command, passing a pointer to config to save parts of the http responses
+		// for subsequent calls.
+		if err := cmd.callback(&commandConfig, tokens); err != nil {
 			fmt.Println(err)
 		}
 	}

@@ -6,7 +6,7 @@ import (
 	httpconfig "github.com/LamontBanks/pokedexcli/internal/http_config"
 )
 
-func commandHelp(config *httpconfig.Config) error {
+func commandHelp(config *httpconfig.Config, args []string) error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")
 	fmt.Println()

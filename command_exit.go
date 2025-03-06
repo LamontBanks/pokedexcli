@@ -7,7 +7,7 @@ import (
 	httpconfig "github.com/LamontBanks/pokedexcli/internal/http_config"
 )
 
-func commandExit(config *httpconfig.Config) error {
+func commandExit(config *httpconfig.Config, args []string) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 

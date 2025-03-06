@@ -2,6 +2,7 @@ package pokeapi
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -39,7 +40,7 @@ type LocationArea struct {
 }
 
 // GET Pokemon maps or move FORWARD through pages of results
-func MapCommand(config *httpconfig.Config) error {
+func MapCommand(config *httpconfig.Config, args []string) error {
 	fullUrl := "https://pokeapi.co/api/v2/location-area"
 
 	// Use the pagination url over the default, if set
@@ -82,7 +83,7 @@ func MapCommand(config *httpconfig.Config) error {
 }
 
 // GET Pokemon maps, move BACKWARDS through results
-func MapBackCommand(config *httpconfig.Config) error {
+func MapBackCommand(config *httpconfig.Config, args []string) error {
 	// Go to the base URL, or next page (if set)
 	fullUrl := ""
 	if config.PreviousUrl != nil {
@@ -123,8 +124,14 @@ func MapBackCommand(config *httpconfig.Config) error {
 	return nil
 }
 
-func ExploreMapCommand(config *httpconfig.Config) error {
-	fullUrl := "https://pokeapi.co/api/v2/location-area/johto-route-32-area"
+func ExploreMapCommand(config *httpconfig.Config, args []string) error {
+	fullUrl := "https://pokeapi.co/api/v2/location-area"
+
+	// The second token should be the name or id parameter
+	if len(args) < 2 {
+		return errors.New("missing id/name arguments")
+	}
+	fullUrl += fmt.Sprintf("/%v", args[1])
 
 	// Check cache first, initialize struct to capture response
 	cachedBytes, responseIsCached := config.Cache.Get(fullUrl)
