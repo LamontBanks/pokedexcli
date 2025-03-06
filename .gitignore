@@ -3,3 +3,5 @@ pokedexcli
 *.log
 *.json
 .DS_Store
+
+scratch.go

@@ -3,6 +3,7 @@ package pokeapi
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	httpclient "github.com/LamontBanks/pokedexcli/internal/http_client"
 	httpconfig "github.com/LamontBanks/pokedexcli/internal/http_config"
@@ -12,6 +13,7 @@ import (
 // Converted using https://mholt.github.io/json-to-go/
 // Manually set nullable strings to `*string``
 
+// Location-area without parameters
 // Endpoint: https://pokeapi.co/api/v2/location-area
 // Doc: https://pokeapi.co/docs/v2#location-areas
 type Maps struct {
@@ -22,6 +24,18 @@ type Maps struct {
 		Name string `json:"name"`
 		URL  string `json:"url"`
 	} `json:"results"`
+}
+
+// Endpoint: https://pokeapi.co/api/v2/location-area
+// Doc: https://pokeapi.co/docs/v2#location-areas
+// Keeping only the JSON fields we care about
+type LocationArea struct {
+	Name              string `json:"name"`
+	PokemonEncounters []struct {
+		Pokemon struct {
+			Name string `json:"name"`
+		} `json:"pokemon"`
+	} `json:"pokemon_encounters"`
 }
 
 // GET Pokemon maps or move FORWARD through pages of results
@@ -35,8 +49,8 @@ func MapCommand(config *httpconfig.Config) error {
 
 	// Check cache first, initialize struct to capture response
 	cachedBytes, responseIsCached := config.Cache.Get(fullUrl)
-	var mapsResponse Maps
 
+	var mapsResponse Maps
 	if responseIsCached {
 		// Unmarshal the cached bytes into the response struct
 		if err := json.Unmarshal(cachedBytes, &mapsResponse); err != nil {
@@ -68,7 +82,6 @@ func MapCommand(config *httpconfig.Config) error {
 }
 
 // GET Pokemon maps, move BACKWARDS through results
-// TODO - make into singular function
 func MapBackCommand(config *httpconfig.Config) error {
 	// Go to the base URL, or next page (if set)
 	fullUrl := ""
@@ -107,5 +120,44 @@ func MapBackCommand(config *httpconfig.Config) error {
 	for _, location := range mapsResponse.Results {
 		fmt.Println(location.Name)
 	}
+	return nil
+}
+
+func ExploreMapCommand(config *httpconfig.Config) error {
+	fullUrl := "https://pokeapi.co/api/v2/location-area/johto-route-32-area"
+
+	// Check cache first, initialize struct to capture response
+	cachedBytes, responseIsCached := config.Cache.Get(fullUrl)
+
+	var locationAreaResponse LocationArea
+	if responseIsCached {
+		// Unmarshal the cached bytes into the response struct
+		if err := json.Unmarshal(cachedBytes, &locationAreaResponse); err != nil {
+			return err
+		}
+	} else {
+		// Otherwise, make the actual request
+		httpclient.Get(fullUrl, &locationAreaResponse)
+
+		// Convert to a []byte
+		encodededBytes, err := json.Marshal(locationAreaResponse)
+		if err != nil {
+			return err
+		}
+
+		// Then save to the cache
+		config.Cache.Add(fullUrl, encodededBytes)
+	}
+
+	// List Pokemon names
+	locationPokemon := []string{}
+	for _, pokemon := range locationAreaResponse.PokemonEncounters {
+		locationPokemon = append(locationPokemon, pokemon.Pokemon.Name)
+	}
+	slices.Sort(locationPokemon)
+	for _, pokemon := range locationPokemon {
+		fmt.Println(pokemon)
+	}
+
 	return nil
 }

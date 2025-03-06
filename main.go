@@ -17,6 +17,7 @@ var commands = map[string]cliCommand{}
 
 func main() {
 	// Set commands
+	// TODO - Move into another file?
 	commands["help"] = cliCommand{
 		name:        "help",
 		description: "Displays a help message",
@@ -36,6 +37,11 @@ func main() {
 		name:        "mapb",
 		description: "List Pokemon locations, page backwards through results",
 		callback:    pokeapi.MapBackCommand,
+	}
+	commands["explore"] = cliCommand{
+		name:        "explore",
+		description: "List Pokemon found in given location",
+		callback:    pokeapi.ExploreMapCommand,
 	}
 
 	// Read-Eval-Print-Loop
