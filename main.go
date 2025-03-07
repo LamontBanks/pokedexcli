@@ -9,6 +9,7 @@ import (
 
 	"github.com/LamontBanks/pokedexcli/internal/pokeapi"
 	inspectpokemon "github.com/LamontBanks/pokedexcli/internal/pokeapi/inspect-pokemon"
+	"github.com/LamontBanks/pokedexcli/internal/pokeapi/pokedex"
 	"github.com/LamontBanks/pokedexcli/internal/pokecache"
 )
 
@@ -110,7 +111,12 @@ func setCommands() {
 	}
 	commands["inspect"] = cliCommand{
 		name:        "inspect <pokemon>",
-		description: "Show data for caught Pokemon",
+		description: "Show data for a caught Pokemon",
 		callback:    inspectpokemon.InspectCommand,
+	}
+	commands["pokedex"] = cliCommand{
+		name:        "pokedex",
+		description: "Show data for all caught Pokemon",
+		callback:    pokedex.PokedexCommand,
 	}
 }
