@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 
-	httpconfig "github.com/LamontBanks/pokedexcli/internal/http_config"
+	"github.com/LamontBanks/pokedexcli/internal/pokeapi"
 )
 
-func commandHelp(config *httpconfig.Config, args []string) error {
+func commandHelp(config *pokeapi.Config, args []string) error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")
 	fmt.Println()

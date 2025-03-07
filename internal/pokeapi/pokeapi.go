@@ -1,3 +1,4 @@
+// TODO - Move functions into own file
 package pokeapi
 
 import (
@@ -9,8 +10,16 @@ import (
 	"time"
 
 	httpclient "github.com/LamontBanks/pokedexcli/internal/http_client"
-	httpconfig "github.com/LamontBanks/pokedexcli/internal/http_config"
+	"github.com/LamontBanks/pokedexcli/internal/pokecache"
 )
+
+// Saves select data from PokeAPI calls
+type Config struct {
+	NextUrl     *string
+	PreviousUrl *string
+	Cache       pokecache.Cache
+	Pokedex     map[string]Pokemon
+}
 
 // Response Structs
 // Converted using https://mholt.github.io/json-to-go/
@@ -47,10 +56,25 @@ type Pokemon struct {
 	ID             int    `json:"id"`
 	Name           string `json:"name"`
 	BaseExperience int    `json:"base_experience"`
+	Height         int    `json:"height"`
+	Weight         int    `json:"weight"`
+	Stats          []struct {
+		Stat struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"stat"`
+	} `json:"stats"`
+	Types []struct {
+		Slot int `json:"slot"`
+		Type struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"type"`
+	} `json:"types"`
 }
 
 // GET Pokemon maps or move FORWARD through pages of results
-func MapCommand(config *httpconfig.Config, args []string) error {
+func MapCommand(config *Config, args []string) error {
 	fullUrl := "https://pokeapi.co/api/v2/location-area"
 
 	// Use the pagination url over the default, if set
@@ -76,7 +100,7 @@ func MapCommand(config *httpconfig.Config, args []string) error {
 }
 
 // GET Pokemon maps, move BACKWARDS through results
-func MapBackCommand(config *httpconfig.Config, args []string) error {
+func MapBackCommand(config *Config, args []string) error {
 	// Go to the base URL, or next page (if set)
 	fullUrl := ""
 	if config.PreviousUrl != nil {
@@ -104,7 +128,7 @@ func MapBackCommand(config *httpconfig.Config, args []string) error {
 }
 
 // List Pokemon found the given emap
-func ExploreMapCommand(config *httpconfig.Config, args []string) error {
+func ExploreMapCommand(config *Config, args []string) error {
 	fullUrl := "https://pokeapi.co/api/v2/location-area"
 
 	// The second token should be the name or id parameter
@@ -134,7 +158,7 @@ func ExploreMapCommand(config *httpconfig.Config, args []string) error {
 
 // Attempt to catch the Pokemon
 // Add to Pokedex if caught
-func CatchCommand(config *httpconfig.Config, args []string) error {
+func CatchCommand(config *Config, args []string) error {
 	fullUrl := "https://pokeapi.co/api/v2/pokemon"
 
 	// The second token should be the name or id parameter
@@ -163,7 +187,7 @@ func CatchCommand(config *httpconfig.Config, args []string) error {
 		time.Sleep(500 * time.Millisecond)
 
 		fmt.Println("Registering to the Pokedex...")
-		config.Pokedex.AddCaughtPokemon(pokemonResponse.Name)
+		config.Pokedex[pokemonResponse.Name] = pokemonResponse
 		time.Sleep(500 * time.Millisecond)
 	} else {
 		time.Sleep(750 * time.Millisecond)
@@ -175,7 +199,7 @@ func CatchCommand(config *httpconfig.Config, args []string) error {
 
 // HTTP GET saving/pulling from the cache
 // Unmarshal's the JSON response into provided response
-func pokeCacheHttpGet(url string, response any, config *httpconfig.Config) error {
+func pokeCacheHttpGet(url string, response any, config *Config) error {
 	// Check cache first
 	cachedBytes, responseIsCached := config.Cache.Get(url)
 

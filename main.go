@@ -7,26 +7,26 @@ import (
 	"strings"
 	"time"
 
-	httpconfig "github.com/LamontBanks/pokedexcli/internal/http_config"
 	"github.com/LamontBanks/pokedexcli/internal/pokeapi"
 	"github.com/LamontBanks/pokedexcli/internal/pokecache"
-	"github.com/LamontBanks/pokedexcli/internal/pokedex"
 )
 
 // Main ---
 var commands = map[string]cliCommand{}
 
 func main() {
+	// CLI commands
 	setCommands()
 
-	// Read-Eval-Print-Loop
-	commandConfig := httpconfig.Config{
+	// Config needed for API calls
+	commandConfig := pokeapi.Config{
 		PreviousUrl: nil,
 		NextUrl:     nil,
 		Cache:       pokecache.NewCache(5 * time.Minute),
-		Pokedex:     pokedex.NewPokedex(),
+		Pokedex:     map[string]pokeapi.Pokemon{},
 	}
 
+	// Read-Eval-Print-Loop
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Printf("Pokedex > ")
@@ -47,8 +47,7 @@ func main() {
 		}
 
 		// Print
-		// If valid, run the command, passing a pointer to config to save parts of the http responses
-		// for subsequent calls.
+		// If valid, run the command
 		if err := cmd.callback(&commandConfig, tokens); err != nil {
 			fmt.Println(err)
 		}
