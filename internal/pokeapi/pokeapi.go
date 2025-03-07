@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"slices"
+	"time"
 
 	httpclient "github.com/LamontBanks/pokedexcli/internal/http_client"
 	httpconfig "github.com/LamontBanks/pokedexcli/internal/http_config"
@@ -15,8 +17,8 @@ import (
 // Manually set nullable strings to `*string``
 
 // Location-area without parameters
-// Endpoint: https://pokeapi.co/api/v2/location-area
-// Doc: https://pokeapi.co/docs/v2#location-areas
+// https://pokeapi.co/api/v2/location-area
+// https://pokeapi.co/docs/v2#location-areas
 type Maps struct {
 	Count    int     `json:"count"`
 	Next     *string `json:"next"`
@@ -27,8 +29,8 @@ type Maps struct {
 	} `json:"results"`
 }
 
-// Endpoint: https://pokeapi.co/api/v2/location-area
-// Doc: https://pokeapi.co/docs/v2#location-areas
+// Location-area with parameters
+// https://pokeapi.co/api/v2/location-area
 // Keeping only the JSON fields we care about
 type LocationArea struct {
 	Name              string `json:"name"`
@@ -37,6 +39,14 @@ type LocationArea struct {
 			Name string `json:"name"`
 		} `json:"pokemon"`
 	} `json:"pokemon_encounters"`
+}
+
+// https://pokeapi.co/docs/v2#pokemon
+// Minimum fields needed
+type Pokemon struct {
+	ID             int    `json:"id"`
+	Name           string `json:"name"`
+	BaseExperience int    `json:"base_experience"`
 }
 
 // GET Pokemon maps or move FORWARD through pages of results
@@ -48,27 +58,10 @@ func MapCommand(config *httpconfig.Config, args []string) error {
 		fullUrl = *config.NextUrl
 	}
 
-	// Check cache first, initialize struct to capture response
-	cachedBytes, responseIsCached := config.Cache.Get(fullUrl)
-
+	// Make request
 	var mapsResponse Maps
-	if responseIsCached {
-		// Unmarshal the cached bytes into the response struct
-		if err := json.Unmarshal(cachedBytes, &mapsResponse); err != nil {
-			return err
-		}
-	} else {
-		// Otherwise, make the actual request
-		httpclient.Get(fullUrl, &mapsResponse)
-
-		// Convert to a []byte
-		encodededBytes, err := json.Marshal(mapsResponse)
-		if err != nil {
-			return err
-		}
-
-		// Then save to the cache
-		config.Cache.Add(fullUrl, encodededBytes)
+	if err := pokeCacheHttpGet(fullUrl, &mapsResponse, config); err != nil {
+		return err
 	}
 
 	// Save the updated Previous and Next URLs of pagination
@@ -93,24 +86,10 @@ func MapBackCommand(config *httpconfig.Config, args []string) error {
 		return nil
 	}
 
-	// Check cache first
-	cachedBytes, responseIsCached := config.Cache.Get(fullUrl)
+	// Make request, cache
 	var mapsResponse Maps
-
-	if responseIsCached {
-		// Unmarshal the cached bytes into the response struct
-		if err := json.Unmarshal(cachedBytes, &mapsResponse); err != nil {
-			return err
-		}
-	} else {
-		// Otherwise, make the actual request, then save to the cache
-		httpclient.Get(fullUrl, &mapsResponse)
-
-		encodededBytes, err := json.Marshal(mapsResponse)
-		if err != nil {
-			return err
-		}
-		config.Cache.Add(fullUrl, encodededBytes)
+	if err := pokeCacheHttpGet(fullUrl, &mapsResponse, config); err != nil {
+		return err
 	}
 
 	// Save the updated Previous, Next URLs of pagination
@@ -124,36 +103,20 @@ func MapBackCommand(config *httpconfig.Config, args []string) error {
 	return nil
 }
 
+// List Pokemon found the given emap
 func ExploreMapCommand(config *httpconfig.Config, args []string) error {
 	fullUrl := "https://pokeapi.co/api/v2/location-area"
 
 	// The second token should be the name or id parameter
 	if len(args) < 2 {
-		return errors.New("missing id/name arguments")
+		return errors.New("missing id/name parameter")
 	}
 	fullUrl += fmt.Sprintf("/%v", args[1])
 
-	// Check cache first, initialize struct to capture response
-	cachedBytes, responseIsCached := config.Cache.Get(fullUrl)
-
+	// Make request, cache
 	var locationAreaResponse LocationArea
-	if responseIsCached {
-		// Unmarshal the cached bytes into the response struct
-		if err := json.Unmarshal(cachedBytes, &locationAreaResponse); err != nil {
-			return err
-		}
-	} else {
-		// Otherwise, make the actual request
-		httpclient.Get(fullUrl, &locationAreaResponse)
-
-		// Convert to a []byte
-		encodededBytes, err := json.Marshal(locationAreaResponse)
-		if err != nil {
-			return err
-		}
-
-		// Then save to the cache
-		config.Cache.Add(fullUrl, encodededBytes)
+	if err := pokeCacheHttpGet(fullUrl, &locationAreaResponse, config); err != nil {
+		return err
 	}
 
 	// List Pokemon names
@@ -164,6 +127,77 @@ func ExploreMapCommand(config *httpconfig.Config, args []string) error {
 	slices.Sort(locationPokemon)
 	for _, pokemon := range locationPokemon {
 		fmt.Println(pokemon)
+	}
+
+	return nil
+}
+
+// Attempt to catch the Pokemon
+// Add to Pokedex if caught
+func CatchCommand(config *httpconfig.Config, args []string) error {
+	fullUrl := "https://pokeapi.co/api/v2/pokemon"
+
+	// The second token should be the name or id parameter
+	if len(args) < 2 {
+		return errors.New("missing pokemon name name/id")
+	}
+	fullUrl += fmt.Sprintf("/%v", args[1])
+
+	// Make request
+	var pokemonResponse Pokemon
+	if err := pokeCacheHttpGet(fullUrl, &pokemonResponse, config); err != nil {
+		return err
+	}
+
+	// Attempt to catch
+
+	// Determine catch change from base_experience
+	// Flat 30% chance
+	fmt.Printf("Throwing a Pokeball at %v...\n", pokemonResponse.Name)
+
+	catchChance := rand.Intn(100)
+	time.Sleep(500 * time.Millisecond)
+
+	if catchChance >= 30 {
+		fmt.Printf("Great! Caught %v\n", pokemonResponse.Name)
+		time.Sleep(500 * time.Millisecond)
+
+		fmt.Println("Registering to the Pokedex...")
+		config.Pokedex.AddCaughtPokemon(pokemonResponse.Name)
+		time.Sleep(500 * time.Millisecond)
+	} else {
+		time.Sleep(750 * time.Millisecond)
+		fmt.Println("Catch failed!")
+	}
+
+	return nil
+}
+
+// HTTP GET saving/pulling from the cache
+// Unmarshal's the JSON response into provided response
+func pokeCacheHttpGet(url string, response any, config *httpconfig.Config) error {
+	// Check cache first
+	cachedBytes, responseIsCached := config.Cache.Get(url)
+
+	if responseIsCached {
+		// Unmarshal the cached bytes into the response struct
+		if err := json.Unmarshal(cachedBytes, &response); err != nil {
+			return err
+		}
+	} else {
+		// Otherwise, make the actual request
+		if err := httpclient.Get(url, &response); err != nil {
+			return err
+		}
+
+		// Convert to a []byte
+		encodededBytes, err := json.Marshal(response)
+		if err != nil {
+			return err
+		}
+
+		// Then save to the cache
+		config.Cache.Add(url, encodededBytes)
 	}
 
 	return nil
