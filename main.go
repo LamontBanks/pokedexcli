@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/LamontBanks/pokedexcli/internal/pokeapi"
+	inspectpokemon "github.com/LamontBanks/pokedexcli/internal/pokeapi/inspect-pokemon"
 	"github.com/LamontBanks/pokedexcli/internal/pokecache"
 )
 
@@ -103,8 +104,13 @@ func setCommands() {
 		callback:    pokeapi.ExploreMapCommand,
 	}
 	commands["catch"] = cliCommand{
-		name:        "explore <map>",
+		name:        "catch <pokemon>",
 		description: "Attempts to catch the Pokemon, saves to the Pokedex",
 		callback:    pokeapi.CatchCommand,
+	}
+	commands["inspect"] = cliCommand{
+		name:        "inspect <pokemon>",
+		description: "Show data for caught Pokemon",
+		callback:    inspectpokemon.InspectCommand,
 	}
 }

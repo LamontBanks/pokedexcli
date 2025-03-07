@@ -9,7 +9,7 @@ import (
 	"slices"
 	"time"
 
-	httpclient "github.com/LamontBanks/pokedexcli/internal/http_client"
+	httpclient "github.com/LamontBanks/pokedexcli/internal/http-client"
 	"github.com/LamontBanks/pokedexcli/internal/pokecache"
 )
 
@@ -59,7 +59,8 @@ type Pokemon struct {
 	Height         int    `json:"height"`
 	Weight         int    `json:"weight"`
 	Stats          []struct {
-		Stat struct {
+		BaseStat int `json:"base_stat"`
+		Stat     struct {
 			Name string `json:"name"`
 			URL  string `json:"url"`
 		} `json:"stat"`
@@ -84,7 +85,7 @@ func MapCommand(config *Config, args []string) error {
 
 	// Make request
 	var mapsResponse Maps
-	if err := pokeCacheHttpGet(fullUrl, &mapsResponse, config); err != nil {
+	if err := PokeCacheHttpGet(fullUrl, &mapsResponse, config); err != nil {
 		return err
 	}
 
@@ -112,7 +113,7 @@ func MapBackCommand(config *Config, args []string) error {
 
 	// Make request, cache
 	var mapsResponse Maps
-	if err := pokeCacheHttpGet(fullUrl, &mapsResponse, config); err != nil {
+	if err := PokeCacheHttpGet(fullUrl, &mapsResponse, config); err != nil {
 		return err
 	}
 
@@ -139,7 +140,7 @@ func ExploreMapCommand(config *Config, args []string) error {
 
 	// Make request, cache
 	var locationAreaResponse LocationArea
-	if err := pokeCacheHttpGet(fullUrl, &locationAreaResponse, config); err != nil {
+	if err := PokeCacheHttpGet(fullUrl, &locationAreaResponse, config); err != nil {
 		return err
 	}
 
@@ -169,28 +170,28 @@ func CatchCommand(config *Config, args []string) error {
 
 	// Make request
 	var pokemonResponse Pokemon
-	if err := pokeCacheHttpGet(fullUrl, &pokemonResponse, config); err != nil {
+	if err := PokeCacheHttpGet(fullUrl, &pokemonResponse, config); err != nil {
 		return err
 	}
 
-	// Attempt to catch
-
+	// Attempt to catch pokemon
 	// Determine catch change from base_experience
 	// Flat 30% chance
 	fmt.Printf("Throwing a Pokeball at %v...\n", pokemonResponse.Name)
 
 	catchChance := rand.Intn(100)
-	time.Sleep(500 * time.Millisecond)
+	const waitTime = 500 * time.Millisecond
+	time.Sleep(waitTime)
 
 	if catchChance >= 30 {
 		fmt.Printf("Great! Caught %v\n", pokemonResponse.Name)
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(waitTime)
 
 		fmt.Println("Registering to the Pokedex...")
 		config.Pokedex[pokemonResponse.Name] = pokemonResponse
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(waitTime)
 	} else {
-		time.Sleep(750 * time.Millisecond)
+		time.Sleep(waitTime)
 		fmt.Println("Catch failed!")
 	}
 
@@ -199,7 +200,7 @@ func CatchCommand(config *Config, args []string) error {
 
 // HTTP GET saving/pulling from the cache
 // Unmarshal's the JSON response into provided response
-func pokeCacheHttpGet(url string, response any, config *Config) error {
+func PokeCacheHttpGet(url string, response any, config *Config) error {
 	// Check cache first
 	cachedBytes, responseIsCached := config.Cache.Get(url)
 
