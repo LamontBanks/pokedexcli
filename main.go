@@ -10,45 +10,21 @@ import (
 	httpconfig "github.com/LamontBanks/pokedexcli/internal/http_config"
 	"github.com/LamontBanks/pokedexcli/internal/pokeapi"
 	"github.com/LamontBanks/pokedexcli/internal/pokecache"
+	"github.com/LamontBanks/pokedexcli/internal/pokedex"
 )
 
 // Main ---
 var commands = map[string]cliCommand{}
 
 func main() {
-	// Set commands
-	// TODO - Move into another file?
-	commands["help"] = cliCommand{
-		name:        "help",
-		description: "Displays a help message",
-		callback:    commandHelp,
-	}
-	commands["exit"] = cliCommand{
-		name:        "exit",
-		description: "Exit the Pokedex",
-		callback:    commandExit,
-	}
-	commands["map"] = cliCommand{
-		name:        "map",
-		description: "List Pokemon locations, page forward through results",
-		callback:    pokeapi.MapCommand,
-	}
-	commands["mapb"] = cliCommand{
-		name:        "mapb",
-		description: "List Pokemon locations, page backwards through results",
-		callback:    pokeapi.MapBackCommand,
-	}
-	commands["explore"] = cliCommand{
-		name:        "explore",
-		description: "List Pokemon found in given location",
-		callback:    pokeapi.ExploreMapCommand,
-	}
+	setCommands()
 
 	// Read-Eval-Print-Loop
 	commandConfig := httpconfig.Config{
 		PreviousUrl: nil,
 		NextUrl:     nil,
 		Cache:       pokecache.NewCache(5 * time.Minute),
+		Pokedex:     pokedex.NewPokedex(),
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -99,4 +75,37 @@ func cleanInput(text string) []string {
 
 func getCommands() map[string]cliCommand {
 	return commands
+}
+
+func setCommands() {
+	commands["help"] = cliCommand{
+		name:        "help",
+		description: "Displays a help message",
+		callback:    commandHelp,
+	}
+	commands["exit"] = cliCommand{
+		name:        "exit",
+		description: "Exit the Pokedex",
+		callback:    commandExit,
+	}
+	commands["map"] = cliCommand{
+		name:        "map",
+		description: "List Pokemon locations, page forward through results",
+		callback:    pokeapi.MapCommand,
+	}
+	commands["mapb"] = cliCommand{
+		name:        "mapb",
+		description: "List Pokemon locations, page backwards through results",
+		callback:    pokeapi.MapBackCommand,
+	}
+	commands["explore"] = cliCommand{
+		name:        "explore <map>",
+		description: "List Pokemon found in given location",
+		callback:    pokeapi.ExploreMapCommand,
+	}
+	commands["catch"] = cliCommand{
+		name:        "explore <map>",
+		description: "Attempts to catch the Pokemon, saves to the Pokedex",
+		callback:    pokeapi.CatchCommand,
+	}
 }
